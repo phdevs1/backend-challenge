@@ -3,4 +3,4 @@ dist
 coverage
 .env
 .git
-src/repositories/generated
+src/shared/db/generated

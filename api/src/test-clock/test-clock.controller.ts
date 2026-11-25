@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import type { TestClock } from '../domain/clock.js';
-import { isoDateTime } from './schemas.js';
-import { parseInput } from './validation.js';
+import type { TestClock } from '../shared/clock.js';
+import { isoDateTime } from '../shared/schemas.js';
+import { parseInput } from '../shared/validation.js';
 
 const setClockBody = z.object({ now: isoDateTime });
 

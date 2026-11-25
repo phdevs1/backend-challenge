@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/', 'coverage/', 'node_modules/', 'src/repositories/generated/'],
+    ignores: ['dist/', 'coverage/', 'node_modules/', 'src/shared/db/generated/'],
   },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
@@ -21,6 +21,11 @@ export default tseslint.config(
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
       'no-console': 'off',
     },
+  },
+  {
+    // `expect.any(String)` and friends are typed `any` by Vitest.
+    files: ['test/**/*.ts'],
+    rules: { '@typescript-eslint/no-unsafe-assignment': 'off' },
   },
   { files: ['**/*.js'], extends: [tseslint.configs.disableTypeChecked] },
   prettier,
