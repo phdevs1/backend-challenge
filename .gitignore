@@ -3,3 +3,6 @@ dist/
 coverage/
 .env
 api/src/shared/db/generated/
+
+# Personal notes
+notes/

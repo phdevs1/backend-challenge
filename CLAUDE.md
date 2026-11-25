@@ -69,7 +69,7 @@ the file name says the kind of test:
 - `<feature>.integration.test.ts` — real app (`useTestApp()`: same wiring as main.ts +
   `TestClock`) against the `clinicsay_test` database, created/migrated by `test/global-setup.ts`
   and emptied before each test. Override its URL with `TEST_DATABASE_URL`.
-- `<entity>.test.ts` — pure unit tests of the domain rules (`test/<feature>/`, or `test/shared/`
+- `<name>.unit.test.ts` — pure unit tests of the domain rules (`test/<feature>/`, or `test/shared/`
   for `shared/clock.ts`).
 - `test/helpers/` — shared test utilities (`fake-controllers.ts`, `test-app.ts`…).
 
