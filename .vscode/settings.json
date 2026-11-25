@@ -1,0 +1,19 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "prettier.requireConfig": true,
+  "eslint.workingDirectories": [{ "directory": "./api", "changeProcessCWD": true }],
+  "typescript.tsdk": "api/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "[yaml]": { "editor.formatOnSave": false },
+  "files.exclude": {
+    "**/node_modules": true,
+    "api/dist": true
+  },
+  "search.exclude": {
+    "api/src/repositories/generated": true
+  }
+}

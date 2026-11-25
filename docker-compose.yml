@@ -1,7 +1,35 @@
-# Añade aquí tu servicio `api` (puerto 3000, CLOCK_MODE=test, PROVIDER_URL=http://provider:4010)
-# y su base de datos. El servicio `provider` no se modifica.
 services:
+  api:
+    build: ./api
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: 3000
+      CLOCK_MODE: test
+      PROVIDER_URL: http://provider:4010
+      DATABASE_URL: postgresql://clinicsay:clinicsay@db:5432/clinicsay
+    depends_on:
+      db:
+        condition: service_healthy
+      provider:
+        condition: service_started
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: clinicsay
+      POSTGRES_PASSWORD: clinicsay
+      POSTGRES_DB: clinicsay
+    ports:
+      - '5433:5432' # 5433 on the host to avoid clashing with a local Postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U clinicsay -d clinicsay']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  # Provided by the challenge: do not modify.
   provider:
     build: ./provider
     ports:
-      - "4010:4010"
+      - '4010:4010'
