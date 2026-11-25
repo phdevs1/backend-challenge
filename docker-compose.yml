@@ -1,0 +1,7 @@
+# Añade aquí tu servicio `api` (puerto 3000, CLOCK_MODE=test, PROVIDER_URL=http://provider:4010)
+# y su base de datos. El servicio `provider` no se modifica.
+services:
+  provider:
+    build: ./provider
+    ports:
+      - "4010:4010"

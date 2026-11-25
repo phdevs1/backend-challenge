@@ -1,0 +1,203 @@
+openapi: 3.1.0
+info:
+  title: ClinicSay · Recordatorios de citas
+  version: 1.0.0
+  description: |
+    Contrato que cumplen tu servicio y los tests de la evaluación. Todas las fechas van en
+    ISO 8601 con zona (`2027-03-28T08:00:00Z` o `2027-03-28T10:00:00+02:00`); en las respuestas,
+    en UTC con `Z`. Los errores responden `{ "error": "<mensaje>" }`.
+
+    Texto exacto del recordatorio (fecha y hora locales de la clínica):
+
+        Hola {nombre del paciente}, te recordamos tu cita en {nombre de la clínica} el {dd/MM/yyyy} a las {HH:mm}. Responde SI para confirmar o NO para cancelar.
+servers:
+  - url: http://localhost:3000
+paths:
+  /health:
+    get:
+      summary: El servicio está listo (base conectada y migrada)
+      responses:
+        '200': { description: Listo }
+
+  /clinics:
+    post:
+      summary: Crear una clínica
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, timezone]
+              properties:
+                name: { type: string, minLength: 1, example: Clínica Dental Sonrisa }
+                timezone: { type: string, description: Zona IANA, example: Europe/Madrid }
+      responses:
+        '201': { description: Creada, content: { application/json: { schema: { $ref: '#/components/schemas/Clinic' } } } }
+        '400': { description: Datos inválidos (también una zona horaria que no existe) }
+
+  /patients:
+    post:
+      summary: Crear un paciente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clinicId, name, acceptsReminders]
+              properties:
+                clinicId: { type: string }
+                name: { type: string, minLength: 1, example: Ana }
+                phone: { type: [string, 'null'], description: E.164 o null, example: '+34600111222' }
+                acceptsReminders: { type: boolean }
+      responses:
+        '201': { description: Creado, content: { application/json: { schema: { $ref: '#/components/schemas/Patient' } } } }
+        '400': { description: Datos inválidos (también un teléfono que no es E.164) }
+        '404': { description: La clínica no existe }
+
+  /appointments:
+    post:
+      summary: Crear una cita (y su recordatorio)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clinicId, patientId, startsAt]
+              properties:
+                clinicId: { type: string }
+                patientId: { type: string }
+                startsAt: { type: string, format: date-time }
+      responses:
+        '201': { description: Creada, content: { application/json: { schema: { $ref: '#/components/schemas/Appointment' } } } }
+        '400': { description: 'Datos inválidos, `startsAt` no es futura o el paciente no es de esa clínica' }
+        '404': { description: La clínica o el paciente no existen }
+
+  /appointments/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      summary: Ver una cita con todos sus recordatorios
+      responses:
+        '200': { description: La cita, content: { application/json: { schema: { $ref: '#/components/schemas/Appointment' } } } }
+        '404': { description: No existe }
+    patch:
+      summary: Reprogramar una cita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startsAt]
+              properties:
+                startsAt: { type: string, format: date-time }
+      responses:
+        '200': { description: Reprogramada, content: { application/json: { schema: { $ref: '#/components/schemas/Appointment' } } } }
+        '400': { description: 'Datos inválidos o `startsAt` no es futura' }
+        '404': { description: No existe }
+        '409': { description: La cita está cancelada o ya empezó }
+
+  /appointments/{id}/cancel:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      summary: Cancelar una cita (si ya estaba cancelada, no hace nada y responde 200)
+      responses:
+        '200': { description: Cancelada, content: { application/json: { schema: { $ref: '#/components/schemas/Appointment' } } } }
+        '404': { description: No existe }
+
+  /jobs/reminders/run:
+    post:
+      summary: Una pasada de envío
+      description: |
+        Envía (o reintenta, o descarta) todos los recordatorios que tocan según el reloj del servicio
+        y responde al terminar. Puede haber varias pasadas a la vez.
+      responses:
+        '200':
+          description: Pasada terminada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [processed]
+                properties:
+                  processed: { type: integer, description: Recordatorios que esta pasada trató }
+
+  /webhooks/inbound-messages:
+    post:
+      summary: Mensaje que un paciente respondió (lo llama el proveedor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messageId, from, text, receivedAt]
+              properties:
+                messageId: { type: string, description: Único por mensaje; el proveedor puede repetir el aviso }
+                from: { type: string, example: '+34600111222' }
+                text: { type: string, example: Sí }
+                receivedAt: { type: string, format: date-time }
+      responses:
+        '200': { description: Recibido (aunque se ignore) }
+        '400': { description: El cuerpo no cumple el esquema }
+
+  /test/clock:
+    put:
+      summary: Fijar la hora del servicio (solo con CLOCK_MODE=test)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [now]
+              properties:
+                now: { type: string, format: date-time }
+      responses:
+        '204': { description: Fijada }
+
+components:
+  schemas:
+    Clinic:
+      type: object
+      required: [id, name, timezone]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        timezone: { type: string }
+    Patient:
+      type: object
+      required: [id, clinicId, name, phone, acceptsReminders]
+      properties:
+        id: { type: string }
+        clinicId: { type: string }
+        name: { type: string }
+        phone: { type: [string, 'null'] }
+        acceptsReminders: { type: boolean }
+    Appointment:
+      type: object
+      required: [id, clinicId, patientId, startsAt, status, reminders]
+      properties:
+        id: { type: string }
+        clinicId: { type: string }
+        patientId: { type: string }
+        startsAt: { type: string, format: date-time }
+        status: { type: string, enum: [scheduled, confirmed, cancelled] }
+        reminders:
+          type: array
+          description: Todos los recordatorios de la cita, del más antiguo al más nuevo
+          items: { $ref: '#/components/schemas/Reminder' }
+    Reminder:
+      type: object
+      required: [id, scheduledFor, status, attempts, sentAt, skipReason]
+      properties:
+        id: { type: string }
+        scheduledFor: { type: string, format: date-time, description: Hora de envío prevista (tras aplicar las reglas) }
+        status: { type: string, enum: [pending, sent, failed, skipped, cancelled] }
+        attempts: { type: integer, description: Llamadas hechas al proveedor }
+        sentAt: { type: [string, 'null'], format: date-time, description: Hora del servicio cuando el proveedor lo aceptó }
+        skipReason: { type: [string, 'null'], enum: [too_late, no_phone, opted_out, null] }
