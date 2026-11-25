@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
-import { ConflictError, NotFoundError, ValidationError } from '../domain/errors.js';
+import { ConflictError, NotFoundError, ValidationError } from './errors.js';
 
 /** Every error leaves the API as `{ "error": "<message>" }`, as the contract requires. */
 export const notFoundHandler: RequestHandler = (_req, res) => {

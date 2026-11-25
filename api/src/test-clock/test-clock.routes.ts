@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { TestClockController } from '../controllers/test-clock.controller.js';
+import type { TestClockController } from './test-clock.controller.js';
 
 export function testClockRoutes(controller: TestClockController): Router {
   const router = Router();

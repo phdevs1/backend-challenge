@@ -1,6 +1,7 @@
 import express, { type Express } from 'express';
-import { errorHandler, notFoundHandler } from './routes/error-handler.js';
-import { createRouter, type Controllers } from './routes/index.js';
+import { errorHandler, notFoundHandler } from './shared/error-handler.js';
+import { createRouter } from './routes.js';
+import type { Controllers } from './wiring.js';
 
 export function createApp(controllers: Controllers): Express {
   const app = express();

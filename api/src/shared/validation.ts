@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import { ValidationError } from '../domain/errors.js';
+import { ValidationError } from './errors.js';
 
 /** Parses a request body/params with a Zod schema, or throws a ValidationError (→ 400). */
 export function parseInput<T extends z.ZodType>(schema: T, input: unknown): z.infer<T> {

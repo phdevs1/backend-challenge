@@ -1,10 +1,36 @@
 generator client {
   provider            = "prisma-client"
-  output              = "../src/repositories/generated"
+  output              = "../src/shared/db/generated"
   moduleFormat        = "esm"
   importFileExtension = "js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model Clinic {
+  id        String    @id @default(uuid())
+  name      String
+  /// IANA time zone (Europe/Madrid, Atlantic/Canary…). Reminder times are computed in it.
+  timezone  String
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  patients  Patient[]
+
+  @@map("clinics")
+}
+
+model Patient {
+  id               String   @id @default(uuid())
+  clinicId         String   @map("clinic_id")
+  clinic           Clinic   @relation(fields: [clinicId], references: [id])
+  name             String
+  /// E.164 or null. Several patients can share a phone (a family).
+  phone            String?
+  acceptsReminders Boolean  @map("accepts_reminders")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([clinicId])
+  @@index([phone])
+  @@map("patients")
 }
