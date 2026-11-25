@@ -25,3 +25,16 @@ export function initialReminder({ scheduledFor, tooLate }: ReminderSchedule): Ne
     ? { scheduledFor, status: 'skipped', skipReason: 'too_late' }
     : { scheduledFor, status: 'pending', skipReason: null };
 }
+
+/** A reminder claimed by a job pass, with what is needed to decide and write its message. */
+export interface DueReminder {
+  id: string;
+  /** Provider calls already made. */
+  attempts: number;
+  startsAt: Date;
+  timeZone: string;
+  clinicName: string;
+  patientName: string;
+  phone: string | null;
+  acceptsReminders: boolean;
+}

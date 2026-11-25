@@ -90,6 +90,10 @@ model Reminder {
   attempts      Int            @default(0)
   sentAt        DateTime?      @map("sent_at") @db.Timestamptz(3)
   skipReason    SkipReason?    @map("skip_reason")
+  /// When a retry is due. Null until the first attempt fails; `scheduledFor` is never changed.
+  nextAttemptAt DateTime?      @map("next_attempt_at") @db.Timestamptz(3)
+  /// A running job pass holds the reminder until this (real) time; it expires if the pass dies.
+  lockedUntil   DateTime?      @map("locked_until") @db.Timestamptz(3)
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([appointmentId])
