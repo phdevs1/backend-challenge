@@ -29,14 +29,17 @@ Requests flow one way: `routes → controllers → services → repositories →
 depends on nothing.
 
 - `domain/` — pure business rules: send-time calculation, reminder text, SI/NO parsing, `Clock`
-  interface. No imports from Express, Prisma or other layers; never call `new Date()` here.
+  interface + `SystemClock`/`TestClock`, domain errors. No imports from Express, Prisma or other
+  layers. Outside `domain/clock.ts`, never call `new Date()` / `Date.now()` for the current time:
+  use the injected `Clock`.
 - `services/` — business logic per resource (appointments, reminders, inbound…). Uses domain,
   repositories and the message provider. Receives dependencies through the constructor.
 - `repositories/` — data access with Prisma (`prisma.ts` = shared client, `generated/` = Prisma
   client, git-ignored). No business rules.
 - `clients/` — HTTP client for the messaging provider (the root `provider/` is the fake server it
   calls). It is the only interface: it is faked in tests.
-- `routes/` — Express routers: only map URL + method to a controller method
+- `routes/` — Express routers: only map URL + method to a controller method. `routes/index.ts`
+  joins them all (`app.ts` just mounts it)
   (`error-handler.ts`: 404 and errors → `{ "error": "<message>" }`).
 - `controllers/` — HTTP glue: validate input (Zod), call a service, build the response (status +
   body). No business rules.
@@ -61,4 +64,6 @@ From `api/`:
     npm run typecheck
     npm run format       # prettier
 
-Before finishing a task: `npm run typecheck && npm run lint && npm test` must pass (in `api/`).
+Before finishing a task: `npm run format:check && npm run typecheck && npm run lint && npm test` must
+pass (in `api/`). CI (`.github/workflows/ci.yml`) runs exactly these plus `npm run build` and a
+`docker compose up` smoke test (`/health` + `PUT /test/clock`) on every push to `main` and every PR.
