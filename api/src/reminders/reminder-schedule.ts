@@ -1,8 +1,8 @@
 import { addCalendarDays, fromLocal, toLocal } from '../shared/time-zone.js';
 
-/** Nothing is sent from 21:00 (included) until 09:00 (clinic time). */
-const QUIET_FROM_HOUR = 21;
-const QUIET_UNTIL_HOUR = 9;
+/** Reminders go out from 09:00 to 21:00 (clinic time), both ends included; nothing outside. */
+const OPENS_AT_HOUR = 9;
+const CLOSES_AT_HOUR = 21;
 
 export interface ReminderScheduleInput {
   startsAt: Date;
@@ -22,7 +22,7 @@ export interface ReminderSchedule {
  * When the reminder of an appointment goes out:
  * 1. Same local time the day before, in the clinic's zone (so it follows DST changes).
  * 2. If that moment already passed, now.
- * 3. Never inside the quiet hours: it moves to the next 09:00 local.
+ * 3. Never outside 09:00-21:00 local (both included): it moves to the next 09:00.
  * 4. If the result is not before the appointment starts, it is too late.
  */
 export function computeReminderSchedule({
@@ -38,11 +38,10 @@ export function computeReminderSchedule({
 
 function outOfQuietHours(instant: Date, timeZone: string): Date {
   const local = toLocal(instant, timeZone);
-  if (local.hour >= QUIET_UNTIL_HOUR && local.hour < QUIET_FROM_HOUR) return instant;
+  const opens = fromLocal({ ...local, hour: OPENS_AT_HOUR, minute: 0 }, timeZone);
+  const closes = fromLocal({ ...local, hour: CLOSES_AT_HOUR, minute: 0 }, timeZone);
 
-  const nextDay = local.hour >= QUIET_FROM_HOUR ? 1 : 0;
-  return fromLocal(
-    { ...addCalendarDays(local, nextDay), hour: QUIET_UNTIL_HOUR, minute: 0 },
-    timeZone,
-  );
+  if (instant < opens) return opens;
+  if (instant <= closes) return instant;
+  return fromLocal({ ...addCalendarDays(local, 1), hour: OPENS_AT_HOUR, minute: 0 }, timeZone);
 }

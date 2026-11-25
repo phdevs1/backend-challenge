@@ -90,7 +90,7 @@ y, dentro de cada una, capas con flujo en un solo sentido: `routes → controlle
 - **Reintentos seguros:** la `Idempotency-Key` es el id del recordatorio y es la misma en todos los intentos. Si el
   proveedor entregó pero la respuesta se perdió (504, error de red, más de 5 s), el reintento no vuelve a entregar.
 - **Reintentos:** a 1 minuto del primer fallo y a 5 del segundo; si falla el tercero, `failed`. Un 422 es `failed`
-  sin reintentos. Los reintentos no esperan a que termine la franja de silencio. El plazo vive en
+  sin reintentos. Los reintentos no esperan a la franja de envío (09:00-21:00): salen a su hora aunque sea de noche. El plazo vive en
   `next_attempt_at`; `scheduledFor` no cambia.
 - **Webhook:** el `messageId` se guarda en `inbound_messages` en la misma transacción que la acción. Un aviso
   repetido no hace nada; si algo falla a medias no queda guardado y el reintento del proveedor se procesa.
@@ -108,18 +108,20 @@ y, dentro de cada una, capas con flujo en un solo sentido: `routes → controlle
 - Se hace con `Intl` (`shared/time-zone.ts`), sin librerías de fechas. Una hora local que no existe (el salto de
   primavera) se resuelve a la hora siguiente al salto; una que ocurre dos veces, a la primera.
 - El texto del recordatorio usa la fecha y hora locales de la clínica.
-- Orden de las reglas: día anterior → si ya pasó, ahora → fuera de la franja de silencio → `too_late` si no es
+- Orden de las reglas: día anterior → si ya pasó, ahora → ajuste a la franja de envío (09:00-21:00) → `too_late` si no es
   anterior a la cita.
 
 ### Cosas que el enunciado deja abiertas y cómo las resolví
 
-- **Franja de silencio:** de 21:00 (incluida) a 09:00 (excluida). A las 21:00 ya no se envía; a las 09:00 sí.
 - **Saltar al enviar:** `no_phone` y `opted_out` se deciden cuando toca enviar, no al crear la cita. Orden:
   `too_late`, luego `opted_out`, luego `no_phone`.
 - **Reprogramar:** solo se cancela el recordatorio pendiente; uno ya enviado se queda como `sent` y se crea otro.
   Una cita confirmada vuelve a `scheduled`.
 - **`processed`:** recordatorios que la pasada trató (enviados, saltados o con un reintento programado).
 - **«Ya empezó»:** se mide con el reloj del servicio, también en el webhook (no con `receivedAt`).
+- **400 del proveedor** (cabecera, teléfono o texto inválidos): el recordatorio queda `failed` sin reintentos, igual
+  que un 422, porque repetir la misma petición no la corrige. No debería ocurrir: el teléfono se valida al crear al
+  paciente con la misma regla que el proveedor y el texto nunca está vacío.
 - **Webhook:** la respuesta va a la cita del último recordatorio `sent` a ese teléfono entre las no canceladas que
   no han empezado. Los mensajes que se ignoran también se registran por `messageId`.
 - **Orden de errores:** al crear una cita, 404 (no existe la clínica o el paciente), luego 400 (paciente de otra

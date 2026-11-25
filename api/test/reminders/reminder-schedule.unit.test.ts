@@ -43,10 +43,32 @@ describe('reminder send time', () => {
     );
   });
 
-  it('moves to 09:00 of the next day when it falls from 21:00', () => {
+  it('moves to 09:00 of the next day when it falls after 21:00', () => {
     // Appointment 22:00 Madrid: the day before at 22:00 is quiet -> 09:00 of the appointment day.
     expect(schedule('2027-06-10T20:00:00Z', 'Europe/Madrid').scheduledFor).toBe(
       '2027-06-10T07:00:00.000Z',
+    );
+  });
+
+  it('sends at exactly 09:00', () => {
+    // Appointment 09:00 Madrid: the day before at 09:00 is allowed as it is.
+    expect(schedule('2027-06-11T07:00:00Z', 'Europe/Madrid').scheduledFor).toBe(
+      '2027-06-10T07:00:00.000Z',
+    );
+  });
+
+  it('sends at exactly 21:00', () => {
+    // Appointment 21:00 Madrid: the day before at 21:00 is allowed as it is.
+    expect(schedule('2027-06-11T19:00:00Z', 'Europe/Madrid').scheduledFor).toBe(
+      '2027-06-10T19:00:00.000Z',
+    );
+  });
+
+  it('moves to 09:00 of the next day one second after 21:00', () => {
+    // Created 10/06 at 21:00:01 Madrid for 11/06 14:00 Madrid.
+    const now = at('2027-06-10T19:00:01Z');
+    expect(schedule('2027-06-11T12:00:00Z', 'Europe/Madrid', now).scheduledFor).toBe(
+      '2027-06-11T07:00:00.000Z',
     );
   });
 

@@ -7,6 +7,7 @@ it.each([
   [503, 'retry'],
   [504, 'retry'],
   [422, 'rejected'],
+  [400, 'rejected'],
 ])('provider status %i means %s', (status, outcome) => {
   expect(outcomeFromStatus(status)).toBe(outcome);
 });
