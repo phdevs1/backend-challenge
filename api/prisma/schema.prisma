@@ -10,27 +10,89 @@ datasource db {
 }
 
 model Clinic {
-  id        String    @id @default(uuid())
-  name      String
+  id           String        @id @default(uuid())
+  name         String
   /// IANA time zone (Europe/Madrid, Atlantic/Canary…). Reminder times are computed in it.
-  timezone  String
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  patients  Patient[]
+  timezone     String
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  patients     Patient[]
+  appointments Appointment[]
 
   @@map("clinics")
 }
 
 model Patient {
-  id               String   @id @default(uuid())
-  clinicId         String   @map("clinic_id")
-  clinic           Clinic   @relation(fields: [clinicId], references: [id])
+  id               String        @id @default(uuid())
+  clinicId         String        @map("clinic_id")
+  clinic           Clinic        @relation(fields: [clinicId], references: [id])
   name             String
   /// E.164 or null. Several patients can share a phone (a family).
   phone            String?
-  acceptsReminders Boolean  @map("accepts_reminders")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  acceptsReminders Boolean       @map("accepts_reminders")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  appointments     Appointment[]
 
   @@index([clinicId])
   @@index([phone])
   @@map("patients")
+}
+
+enum AppointmentStatus {
+  scheduled
+  confirmed
+  cancelled
+
+  @@map("appointment_status")
+}
+
+enum ReminderStatus {
+  pending
+  sent
+  failed
+  skipped
+  cancelled
+
+  @@map("reminder_status")
+}
+
+enum SkipReason {
+  too_late
+  no_phone
+  opted_out
+
+  @@map("skip_reason")
+}
+
+model Appointment {
+  id        String            @id @default(uuid())
+  clinicId  String            @map("clinic_id")
+  clinic    Clinic            @relation(fields: [clinicId], references: [id])
+  patientId String            @map("patient_id")
+  patient   Patient           @relation(fields: [patientId], references: [id])
+  startsAt  DateTime          @map("starts_at") @db.Timestamptz(3)
+  status    AppointmentStatus @default(scheduled)
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  reminders Reminder[]
+
+  @@index([clinicId])
+  @@index([patientId])
+  @@map("appointments")
+}
+
+model Reminder {
+  id            String         @id @default(uuid())
+  appointmentId String         @map("appointment_id")
+  appointment   Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  /// Planned send time, after applying the schedule rules.
+  scheduledFor  DateTime       @map("scheduled_for") @db.Timestamptz(3)
+  status        ReminderStatus @default(pending)
+  /// Calls made to the messaging provider.
+  attempts      Int            @default(0)
+  sentAt        DateTime?      @map("sent_at") @db.Timestamptz(3)
+  skipReason    SkipReason?    @map("skip_reason")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([appointmentId])
+  @@index([status, scheduledFor])
+  @@map("reminders")
 }

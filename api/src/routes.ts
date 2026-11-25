@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { appointmentsRoutes } from './appointments/appointments.routes.js';
 import { clinicsRoutes } from './clinics/clinics.routes.js';
 import { healthRoutes } from './health/health.routes.js';
 import { patientsRoutes } from './patients/patients.routes.js';
@@ -12,6 +13,7 @@ export function createRouter(controllers: Controllers): Router {
   router.use(healthRoutes(controllers.health));
   router.use(clinicsRoutes(controllers.clinics));
   router.use(patientsRoutes(controllers.patients));
+  router.use(appointmentsRoutes(controllers.appointments));
   if (controllers.testClock) router.use(testClockRoutes(controllers.testClock));
 
   return router;
