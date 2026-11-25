@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { appointmentsRoutes } from './appointments/appointments.routes.js';
 import { clinicsRoutes } from './clinics/clinics.routes.js';
 import { healthRoutes } from './health/health.routes.js';
+import { inboundRoutes } from './inbound/inbound.routes.js';
 import { patientsRoutes } from './patients/patients.routes.js';
 import { remindersRoutes } from './reminders/reminders.routes.js';
 import { testClockRoutes } from './test-clock/test-clock.routes.js';
@@ -16,6 +17,7 @@ export function createRouter(controllers: Controllers): Router {
   router.use(patientsRoutes(controllers.patients));
   router.use(appointmentsRoutes(controllers.appointments));
   router.use(remindersRoutes(controllers.reminders));
+  router.use(inboundRoutes(controllers.inbound));
   if (controllers.testClock) router.use(testClockRoutes(controllers.testClock));
 
   return router;

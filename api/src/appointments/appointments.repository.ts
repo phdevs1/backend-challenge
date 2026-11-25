@@ -67,17 +67,25 @@ export class AppointmentsRepository {
   /** Cancels the appointment and its pending reminder. Cancelling twice changes nothing. */
   cancel(id: string): Promise<Appointment | null> {
     return this.prisma.$transaction(async (tx) => {
-      const cancelled = await tx.appointment.updateMany({
-        where: { id, status: { not: 'cancelled' } },
-        data: { status: 'cancelled' },
-      });
-      if (cancelled.count > 0) {
-        await tx.reminder.updateMany({
-          where: { appointmentId: id, status: 'pending' },
-          data: { status: 'cancelled' },
-        });
-      }
+      await cancelWithPendingReminder(tx, id);
       return tx.appointment.findUnique({ where: { id }, select: appointmentSelect });
+    });
+  }
+}
+
+/** Shared by every way of cancelling (the API and a patient's NO), inside the caller's transaction. */
+export async function cancelWithPendingReminder(
+  tx: Prisma.TransactionClient,
+  appointmentId: string,
+): Promise<void> {
+  const cancelled = await tx.appointment.updateMany({
+    where: { id: appointmentId, status: { not: 'cancelled' } },
+    data: { status: 'cancelled' },
+  });
+  if (cancelled.count > 0) {
+    await tx.reminder.updateMany({
+      where: { appointmentId, status: 'pending' },
+      data: { status: 'cancelled' },
     });
   }
 }

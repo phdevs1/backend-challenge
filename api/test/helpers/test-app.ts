@@ -17,7 +17,9 @@ export function useTestApp() {
   const app = createApp(createControllers({ prisma, messageProvider: provider, testClock: clock }));
 
   beforeEach(async () => {
-    await prisma.$executeRawUnsafe('TRUNCATE TABLE patients, clinics RESTART IDENTITY CASCADE');
+    await prisma.$executeRawUnsafe(
+      'TRUNCATE TABLE patients, clinics, inbound_messages RESTART IDENTITY CASCADE',
+    );
   });
 
   afterAll(async () => {
