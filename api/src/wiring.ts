@@ -4,6 +4,9 @@ import { AppointmentsService } from './appointments/appointments.service.js';
 import type { MessageProvider } from './clients/message-provider.js';
 import { ClinicsController } from './clinics/clinics.controller.js';
 import { HealthController } from './health/health.controller.js';
+import { InboundController } from './inbound/inbound.controller.js';
+import { InboundRepository } from './inbound/inbound.repository.js';
+import { InboundService } from './inbound/inbound.service.js';
 import { PatientsController } from './patients/patients.controller.js';
 import { TestClockController } from './test-clock/test-clock.controller.js';
 import { SystemClock, type TestClock } from './shared/clock.js';
@@ -23,6 +26,7 @@ export interface Controllers {
   appointments: AppointmentsController;
   patients: PatientsController;
   reminders: RemindersController;
+  inbound: InboundController;
   /** Only present with CLOCK_MODE=test; without it `PUT /test/clock` does not exist (404). */
   testClock?: TestClockController | undefined;
 }
@@ -54,6 +58,7 @@ export function createControllers({ prisma, messageProvider, testClock }: Wiring
     reminders: new RemindersController(
       new RemindersService(new RemindersRepository(prisma), messageProvider, clock),
     ),
+    inbound: new InboundController(new InboundService(new InboundRepository(prisma), clock)),
     testClock: testClock && new TestClockController(testClock),
   };
 }

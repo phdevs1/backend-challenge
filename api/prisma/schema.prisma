@@ -100,3 +100,11 @@ model Reminder {
   @@index([status, scheduledFor])
   @@map("reminders")
 }
+
+/// Provider messages already handled: the provider may repeat a notice, only the first counts.
+model InboundMessage {
+  messageId String   @id @map("message_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("inbound_messages")
+}
